@@ -2,6 +2,28 @@
 """DnD Roller Nathan Smith 2013/06/26"""
 import random
 import argparse
+import cmd
+
+class Roll_Console(cmd.Cmd):
+	def default(self, line):
+		try:
+			buff = line.split(" ")
+			if("-s" in buff):
+				dice = buff[:buff.index("-s")]
+				spec = buff[buff.index("-s")+1:]
+				args = consoleArgs(dice, spec)
+			else:
+				args = consoleArgs(buff, None)
+			roll(args)
+		except:
+			print("Invalid dice! Dice should be in the format d10, 2d20, etc. Do not comma separate dice!")
+
+	def do_EOF(self, line):
+		return True
+
+	def do_q(self, line):
+		return True
+
 
 def main():
 	random.seed()
@@ -48,30 +70,10 @@ def roll(args):
 def roll_console():
 	"""Interactive roller"""
 	helptext = "\nWelcome to the interactive roller.\nEnter a roll, press enter to re-roll, or enter q to quit."
-	print(helptext)
-	lastroll = None
-	while True:
-		try:
-			#Ask for input
-			buff = raw_input(">>> ")
-			#Quit?
-			if(buff.lower() == 'q'):
-				break
-			elif(buff == "" and lastroll != None):
-				roll(lastroll)
-			else:
-				buff = buff.split(" ")
-				if("-s" in buff):
-					dice = buff[:buff.index("-s")]
-					spec = buff[buff.index("-s")+1:]
-					args = consoleArgs(dice, spec)
-				else:
-					args = consoleArgs(buff, None)
-				lastroll = args
-				roll(args)
-		except:
-			print("Invalid dice! Dice should be in the format d10, 2d20, etc. Do not comma separate dice!")
-			continue
+	console = Roll_Console()
+	console.prompt = ">>>> "
+	console.cmdloop(helptext)
+
 
 class consoleArgs:
 	def __init__(self, dice, special):
@@ -80,10 +82,11 @@ class consoleArgs:
 
 class die:
 	"""Die class. Can be 'rolled' by calling roll function"""
-	def __init__(self, sides):
+	def __init__(self, sides, mod):
 		self.sides = sides
+		self.mod = mod
 	def roll(self):
-		return random.randint(1, self.sides)
+		return (random.randint(1, self.sides) + self.mod)
 
 def flipCoins(coins):
 	"""Flip a bunch of coins!"""
@@ -98,7 +101,10 @@ def getRolls(dice):
 	"""Print out the values of the rolls"""
 	#Print the dice
 	for each in dice:
-		print('{:<7}'.format("d"+str(each.sides))),
+		if(each.mod == 0):
+			print('{:<7}'.format("d"+str(each.sides))),
+		else:
+			print('{:<7}'.format("d"+str(each.sides)+"+"+str(each.mod))),
 	#Print the values
 	print("\n"),
 	total = 0
@@ -116,6 +122,15 @@ def getDice(dices):
 	dice = []
 	coins = 0
 	for item in dices:
+		#Modifier?
+		if('+' in item):
+			mod = int(item.split("+")[1])
+			item = item.split("+")[0]
+		elif('-' in item):
+			mod = int(item.split("-")[1])*(-1)
+			item = item.split("+")[0]
+		else:
+			mod = 0
 		#How many are we rolling?
 		number = 0
 		if(item.startswith('d')):
@@ -133,11 +148,11 @@ def getDice(dices):
 		if(sides < 0):
 			raise AttributeError("Cannot have negative sides!")
 		#Are they coins?
-		if(sides == 2):
+		if(sides == 2 and mod == 0):
 			coins += number
 		else:
 			for x in range(number):
-				dice.append(die(sides))
+				dice.append(die(sides, mod))
 	return (dice, coins)
 
 if __name__ == "__main__":
