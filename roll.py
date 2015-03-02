@@ -128,7 +128,7 @@ def getDice(dices):
 			item = item.split("+")[0]
 		elif('-' in item):
 			mod = int(item.split("-")[1])*(-1)
-			item = item.split("+")[0]
+			item = item.split("-")[0]
 		else:
 			mod = 0
 		#How many are we rolling?
