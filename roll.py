@@ -6,20 +6,6 @@ import cmd
 import re
 
 
-class RollConsole(cmd.Cmd):
-    def default(self, line):
-        try:
-            roll_dice(line)
-        except:
-            print("Invalid dice! Dice should be in the format d10, 2d20, etc. Do not comma separate dice!")
-
-    def do_EOF(self, line):
-        return True
-
-    def do_q(self, line):
-        return True
-
-
 def main():
     random.seed()
     parser = argparse.ArgumentParser(description="DnD Roller")
@@ -38,13 +24,28 @@ def main():
         roll_dice(args.dice[0])
 
 
-def tokenize(expr):
-    def maprepl(matchobj):
-        token_map = {',': 'SEP', ' ': ''}
-        return token_map[matchobj.group(0)]
+class RollConsole(cmd.Cmd):
+    def default(self, line):
+        try:
+            roll_dice(line)
+        except:
+            print("Invalid dice! Dice should be in the format d10, 2d20, etc. Do not comma separate dice!")
 
-    expr = re.sub('[ ,]', maprepl, expr)
-    return expr
+    def do_EOF(self, line):
+        return True
+
+    def do_q(self, line):
+        return True
+
+
+class Die:
+    def __init__(self, sides, options):
+        self.sides = sides
+        self.options = self.parse_options(options)
+
+    def parse_options(self, options):
+
+    def roll(self):
 
 
 def roll_dice(dice):
@@ -57,7 +58,18 @@ def roll_dice(dice):
             print(result)
 
 
+def tokenize(expr):
+    """Split the given input based on commas and remove whitespace. Replaces the commas with SEP"""
+    def maprepl(matchobj):
+        token_map = {',': 'SEP', ' ': ''}
+        return token_map[matchobj.group(0)]
+
+    expr = re.sub('[ ,]', maprepl, expr)
+    return expr
+
+
 def roller(expr):
+    """Given all the dice rolls, rolls each one."""
     dice = expr.split('SEP')
     results = []
     for die in dice:
@@ -65,7 +77,16 @@ def roller(expr):
     return results
 
 
+def deval(expr):
+    expr = re.sub(r'\d*d\d+', roll, expr)
+    numerical = re.sub(r'\[\d+d\d+:(\d,?)+=\d+\]', digitize, expr)
+    total = eval(numerical)
+    expr += " = " + str(total)
+    return expr
+
+
 def roll(expr):
+    """Given a single die string, return it formatted as a die object with representation [xdx:y, w=z]"""
     expr = str(expr.group(0))
     if expr.startswith("d"):
         expr = '1' + expr
@@ -85,14 +106,6 @@ def digitize(expr):
     a = expr.find("=")
     b = expr.find("]")
     return expr[a + 1:b]
-
-
-def deval(expr):
-    expr = re.sub(r'\d*d\d+', roll, expr)
-    numerical = re.sub(r'\[\d+d\d+:(\d,?)+=\d+\]', digitize, expr)
-    total = eval(numerical)
-    expr += " = " + str(total)
-    return expr
 
 
 if __name__ == "__main__":
