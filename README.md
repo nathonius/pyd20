@@ -26,9 +26,9 @@ Additionally, if you wish to roll multiple dice, running `$ roll.py -m` will ent
 `>>> `
 
 Dice can also make use of some advanced options.
+
 | Option | Description | Example |
 | --- | --- | --- |
 | `k<h/m/l><x>` | Keep x highest/middle/lowest dice. | `10d10kh3` might give `[3d10=28]` |
-
 | `s<m/b><x>` | The die is successful if it meets/beats x. Defaults to meets. Useful in tandem with the groupie option. Unsuccessful dice are not counted toward the total. However any +/- modifiers following them are counted. | `1d20sb17` is a d20 that is successful if it beats 17. |
 | `g` | This die's value is only used if the previous die was successful. This die is unsuccessful if the previous die was unsuccessful, even if this die also has the success option specified. | `1d20s10 + 2d8g` might give `[1d20=1(failed)] + [2d8=8(failed)] = 0` |
