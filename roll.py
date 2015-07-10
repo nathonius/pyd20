@@ -8,6 +8,9 @@ import statistics
 
 
 def main():
+    """Types:
+    parser: ArgumentParser
+    args: namespace"""
     random.seed()
     parser = argparse.ArgumentParser(description="DnD Roller")
     parser.add_argument('dice', nargs='*', help="Dice to roll.")
@@ -16,18 +19,21 @@ def main():
     args = parser.parse_args()
 
     if args.multiple:
+        print("Enter q to quit.")
         console = RollConsole()
         console.prompt = ">>> "
         console.cmdloop()
     elif not args.dice:
         parser.print_help()
     else:
-        roll_dice(args.dice)
+        if args.dice != "":
+            roll_dice(args.dice)
 
 
 class RollConsole(cmd.Cmd):
     def default(self, line):
-        roll_dice(line)
+        if line != "":
+            roll_dice(line)
 
     def do_EOF(self, line):
         return True
@@ -45,16 +51,22 @@ class Die:
         self.sides: int
         self.value: int
         self.values: list of ints
-        self.success: bool/None"""
+        self.success: bool"""
         self.value = 0
         self.values = []
         self.options = {}
-        # self.success will be set true/false if s option is specified
-        self.success = None
-        # Get the sides of the dice and any options
-        self.die_string, options = re.findall(r"(\d*d\d+)([a-ce-np-z0-9]+)?", args)[0]
+        # self.success will be set true/false if 's' option is specified
+        self.success = True
+        # Get the sides of the dice and any options (re.findall returns ([group1, group2]), so we get the 0th element)
+        try:
+            self.die_string, options = re.findall(r"(\d*d\d+)([a-ce-np-z0-9]+)?", args)[0]
+        except IndexError:
+            print("No valid dice found!")
+            raise
+        # If the input is in the form d20, d10, d4, etc, we change it to 1d20, 1d10, 1d4, etc.
         if self.die_string.startswith('d'):
             self.times = 1
+        # Otherwise, we extract how many times to roll die_string.split('d') should give [x, y] where input is xdy
         else:
             self.times = int(self.die_string.split('d')[0])
         self.sides = int(self.die_string.split('d')[1])
@@ -64,13 +76,16 @@ class Die:
         self.parse_options(options)
 
     def __repr__(self):
-        return str(self.value)
+        if self.success:
+            return str(self.value)
+        else:
+            return "0"
 
     def __str__(self):
-        if self.value != 0:
+        if self.success :
             return "[" + str(self.times) + "d" + str(self.sides) + "=" + str(self.value) + "]"
         else:
-            return "[" + str(self.times) + "d" + str(self.sides) + "=FAILED]"
+            return "[" + str(self.times) + "d" + str(self.sides) + "=" + str(self.value) + "(failed)]"
 
     def roll(self, sides, times):
         for i in range(times):
@@ -81,12 +96,18 @@ class Die:
     def parse_options(self, options):
         """Types:
         options: string
+        keep: re.match object
+        success: re.match object
+        dice_to_keep: int
+        which_to_keep: string
+        middle_values: list of ints
+        middle: int
 
         Possible Options:
         k<h/m/l><num> - keep highest/middle/lowest number of dice
         s<b/m><num> - sets this die's success if it beats/meets (default is meets) value
         g - roll is only counted if previous roll is successful"""
-        # Check for each option
+        # Check for keep option
         keep = re.search(r"k[hml]\d+", options)
         if keep:
             dice_to_keep = int(keep.group(0)[2:])
@@ -100,23 +121,26 @@ class Die:
                     # Sum the lowest x, works by sorting (reversed), then slicing the list
                     self.value = sum(sorted(self.values, reversed=True)[len(self.values)-dice_to_keep:])
                 else:
-                    # Sum the middle x values
+                    # Sum the middle x values. Works by taking the (high) median of the set out until we have enough.
                     middle_values = []
                     for i in range(dice_to_keep):
-                        middle = statistics.median_low(self.values)
+                        middle = statistics.median_high(self.values)
                         middle_values.append(middle)
                         self.values.remove(middle)
                     self.value = sum(middle_values)
                     self.values = middle_values
                 self.times = dice_to_keep
-
+        # Check for success option
         success = re.search(r"s[bm]?\d+", options)
         if success:
             test_value = int(re.search(r"\d+", success.group(0)).group(0))
+            # Success if x beats y
             if "b" in success.group(0):
                 self.success = self.value > test_value
+            # Success if x beats or meets y
             else:
                 self.success = self.value >= test_value
+        # Set the groupie option
         self.options["g"] = "g" in options
 
 
@@ -149,10 +173,13 @@ def roll_dice(dice_groups):
             if is_operator(die_string):
                 dice.append(die_string)
             else:
-                dice.append(Die(die_string))
+                try:
+                    dice.append(Die(die_string))
+                except IndexError:
+                    return
         # Check groupies
         dice = eval_groupies(dice)
-        # Put it all together and eval
+        # Numerical is the string we can eval, displayed includes the dice as well as results.
         numerical = ""
         displayed = ""
         for die in dice:
@@ -162,16 +189,20 @@ def roll_dice(dice_groups):
             else:
                 numerical += repr(die)
                 displayed += str(die)
+        # Eval, and add the result to the displayed string
         result = eval(numerical)
         displayed = displayed + " = " + str(result)
         results.append(displayed)
 
-    # Show the user something
+    # Show the user something. Print groups on separate lines.
     output = "\n".join(results)
     print(output)
 
 
 def eval_groupies(dice):
+    """Types:
+    last_die: Die object/None, used for groupies
+    dice: list of Die objects AND operator strings"""
     last_die = None
     for i in range(len(dice)):
         if is_operator(dice[i]):
@@ -194,6 +225,7 @@ def eval_groupies(dice):
 
 
 def is_operator(criteria):
+    """Actually returns True if criteria is an operator ()+-*/\\ OR it is a integer"""
     return type(criteria) is str and (criteria in ("()+-*/\\") or criteria.isdigit())
 
 
