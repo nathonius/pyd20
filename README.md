@@ -1,14 +1,14 @@
-#pyd20
-##A (Fancy) Dice Roller
+# pyd20
+## A (Fancy) Dice Roller
 I wrote pyd20 over the span of a very long time - writing and rewriting over and over. It's been a pet project of mine focused more on the code itself over the functionality of the project. However, it's now in a workable state.
 
-###Requirements
+### Requirements
 Python 3.x
 
-###Installation
+### Installation
 Just clone this repo and place roll.py somewhere easy to access. I like to make a symlink or add it to my path so I can just call roll from any directory.
 
-###Usage
+### Usage
 General usage is like so:
 `$ roll.py 1d20+3, 2d8+5 + 3d6, d2`
 This will produce the output:
