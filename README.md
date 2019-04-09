@@ -1,6 +1,6 @@
 # pyd20
 ## A (Fancy) Dice Roller
-I wrote pyd20 over the span of a very long time - writing and rewriting over and over. It's been a pet project of mine focused more on the code itself over the functionality of the project. However, it's now in a workable state.
+I wrote pyd20 over the span of a very long time - writing and rewriting over and over; it's probably due for a re-write, though maybe in another language. It's been a pet project of mine focused more on the code itself over the functionality of the project. However, it's now in a workable state.
 
 ### Requirements
 Python 3.x
